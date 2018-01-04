@@ -7,11 +7,12 @@ from color import *
 from gradient import *
 from sklearn.preprocessing import StandardScaler
 
-def single_img_features(img, color_space='RGB', spatial_size=(32, 32), 
+def single_img_features(img, spatial_size=(32, 32), 
+                         color_space=None,
                          hist_bins=32, hist_range=(0, 256), 
                          orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0,
                          spatial_feat=True, hist_feat=True, hog_feat=True):
-    feature_image = to_colorspace(img, color_space)
+    feature_image = img
 
     img_features = []
 
@@ -35,40 +36,39 @@ def single_img_features(img, color_space='RGB', spatial_size=(32, 32),
                 pix_per_cell, cell_per_block, vis=False, feature_vec=True)            
         img_features.append(hog_features)
     
-    return np.concatenate(img_features)
+    return np.concatenate(img_features).astype(np.float64)
 
 def extract_features(items, *args, **kw):
     features_list = []
     
     for item in items:
-        img = load(item)
+        img = to_colorspace(load(item), kw.get('color_space','RGB'))
         features = single_img_features(img, *args, **kw)
         features_list.append(features)
-
-    X = np.vstack(features_list).astype(np.float64)
-    return X
-
-
-
-def extract_hog_features(items, color_space='RGB', orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0):
-    features_list = []
     
-    for item in items:        
-        img = load(item)
-        feature_image = to_colorspace(img, cspace)
-        if hog_channel == 'ALL':
-            hog_features = []
-            for channel in range(feature_image.shape[2]):
-                hog_features.append(get_hog_features(feature_image[:,:,channel], orient, pix_per_cell, cell_per_block, vis=False, feature_vec=True))
-            hog_features = np.ravel(hog_features)
-        else:
-            hog_channel = int(hog_channel)
-            hog_features = get_hog_features(feature_image[:,:,hog_channel], orient, 
-                pix_per_cell, cell_per_block, vis=False, feature_vec=True)            
-        features_list.append(hog_features)
+    return np.vstack(features_list).astype(np.float64)
 
-    X = np.vstack(features_list).astype(np.float64)
-    return features_list    
+
+
+# def extract_hog_features(items, color_space='RGB', orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0):
+#     features_list = []
+    
+#     for item in items:        
+#         img = load(item)
+#         feature_image = to_colorspace(img, cspace)
+#         if hog_channel == 'ALL':
+#             hog_features = []
+#             for channel in range(feature_image.shape[2]):
+#                 hog_features.append(get_hog_features(feature_image[:,:,channel], orient, pix_per_cell, cell_per_block, vis=False, feature_vec=True))
+#             hog_features = np.ravel(hog_features)
+#         else:
+#             hog_channel = int(hog_channel)
+#             hog_features = get_hog_features(feature_image[:,:,hog_channel], orient, 
+#                 pix_per_cell, cell_per_block, vis=False, feature_vec=True)            
+#         features_list.append(hog_features)
+
+#     X = np.vstack(features_list).astype(np.float64)
+#     return features_list    
 
 
 def plot_features(items):

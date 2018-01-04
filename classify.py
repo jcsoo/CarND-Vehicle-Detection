@@ -72,7 +72,7 @@ def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
     # Return the image copy with boxes drawn
     return imcopy
 
-def search_windows(img, windows, clf, scaler, color_space='RGB', 
+def search_windows(img, windows, clf, scaler,
                     spatial_size=(32, 32), hist_bins=32, 
                     hist_range=(0, 256), orient=9, 
                     pix_per_cell=8, cell_per_block=2, 
@@ -87,18 +87,35 @@ def search_windows(img, windows, clf, scaler, color_space='RGB',
         test_img = cv2.resize(img[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64))        
 
         #4) Extract features for that window using single_img_features()
-        features = single_img_features(test_img, color_space=color_space, 
+
+
+        features = single_img_features(test_img,
                             spatial_size=spatial_size, hist_bins=hist_bins, 
                             orient=orient, pix_per_cell=pix_per_cell, 
                             cell_per_block=cell_per_block, 
                             hog_channel=hog_channel, spatial_feat=spatial_feat, 
                             hist_feat=hist_feat, hog_feat=hog_feat)        
+
         #5) Scale extracted features to be fed to classifier
         test_features = scaler.transform(np.array(features).reshape(1, -1))
+
         #6) Predict using your classifier
         prediction = clf.predict(test_features)
         #7) If positive (prediction == 1) then save the window
         if prediction == 1:
+            # fig = plt.figure(figsize=(12,4))
+            # plt.subplot(131)
+            # plt.imshow(test_img)
+            # plt.title('Original Image')
+            # plt.subplot(132)
+            # plt.plot(features)
+            # plt.title('Raw Features')
+            # plt.subplot(133)
+            # plt.plot(test_features[0])
+            # plt.title('Normalized Features')
+            # fig.tight_layout()
+            # plt.show()
+
             on_windows.append(window)
     #8) Return windows for positive detections
     return on_windows
@@ -184,14 +201,15 @@ def test_hog():
                         print(colorspace, orient, pix_per_cell, cell_per_block, hog_channel, score, '%2.2f' % dt)
 
 # Define a single function that can extract features using hog sub-sampling and make predictions
-def find_cars(img, color_space, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins,
+def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hog_channel,
     spatial_feat=True, hist_feat=True, hog_feat=True
 ):
     
     draw_img = np.copy(img)
    
     img_tosearch = img[ystart:ystop,:,:]
-    ctrans_tosearch = to_colorspace(img_tosearch, color_space)
+    ctrans_tosearch = img_tosearch
+
     if scale != 1:
         imshape = ctrans_tosearch.shape
         ctrans_tosearch = cv2.resize(ctrans_tosearch, (np.int(imshape[1]/scale), np.int(imshape[0]/scale)))
@@ -213,10 +231,20 @@ def find_cars(img, color_space, ystart, ystop, scale, svc, X_scaler, orient, pix
     nysteps = (nyblocks - nblocks_per_window) // cells_per_step + 1
     
     # Compute individual channel HOG features for the entire image
-    hog1 = get_hog_features(ch1, orient, pix_per_cell, cell_per_block, feature_vec=False)
-    hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=False)
-    hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
+
+    if hog_channel == 'A' or hog_channel == 'ALL':    
+        hog1 = get_hog_features(ch1, orient, pix_per_cell, cell_per_block, feature_vec=False)
+        hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=False)
+        hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
+    elif hog_channel == 0:
+        hog1 =  get_hog_features(ch1, orient, pix_per_cell, cell_per_block, feature_vec=False)
+    elif hog_channel == 1:
+        hog2 =  get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=False)
+    elif hog_channel == 2:
+        hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
     
+    boxes = []
+
     for xb in range(nxsteps):
         for yb in range(nysteps):
             ypos = yb*cells_per_step
@@ -242,10 +270,20 @@ def find_cars(img, color_space, ystart, ystop, scale, svc, X_scaler, orient, pix
 
             if hog_feat:
                 # Extract HOG for this patch
-                hog_feat1 = hog1[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
-                hog_feat2 = hog2[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
-                hog_feat3 = hog3[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
-                hog_features = np.hstack((hog_feat1, hog_feat2, hog_feat3))
+                if hog_channel == 'A' or hog_channel == 'ALL':                        
+                    hog_feat1 = hog1[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                    hog_feat2 = hog2[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                    hog_feat3 = hog3[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                    hog_features = np.hstack((hog_feat1, hog_feat2, hog_feat3))
+                elif hog_channel == 0:
+                    hog_feat1 = hog1[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                    hog_features = hog_feat1
+                elif hog_channel == 1:
+                    hog_feat2 = hog2[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                    hog_features = hog_feat2
+                elif hog_channel == 2:
+                    hog_feat3 = hog3[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                    hog_features = hog_feat3
                 features.append(hog_features)
 
 
@@ -257,27 +295,38 @@ def find_cars(img, color_space, ystart, ystop, scale, svc, X_scaler, orient, pix
                 xbox_left = np.int(xleft*scale)
                 ytop_draw = np.int(ytop*scale)
                 win_draw = np.int(window*scale)
-                cv2.rectangle(draw_img,(xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart),(0,0,255),6) 
+                # cv2.rectangle(draw_img,(xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart),(0,0,255),6) 
+                boxes.append(((xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart)))
                 
-    return draw_img
+    return boxes
 
 def test_search(args):
     count = 1000
 
-    color_space = 'HSV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+    color_space = 'YUV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
     orient = 9  # HOG orientations
     pix_per_cell = 16 # HOG pixels per cell
     cell_per_block = 2 # HOG cells per block
     hog_channel = 'ALL' # Can be 0, 1, 2, or "ALL"
     spatial_size = (16, 16) # Spatial binning dimensions
     hist_bins = 16    # Number of histogram bins
-    spatial_feat = False # Spatial features on or off
+    spatial_feat = True # Spatial features on or off
     hist_feat = True # Histogram features on or off
-    hog_feat = False # HOG features on or off
+    hog_feat = True # HOG features on or off
     y_start_stop = [500, 700] # Min and max in y to search in slide_window()    
 
     cars = vehicles()[:count]
     notcars = non_vehicles()[:count]
+    
+    for c in cars:
+        load(c)
+
+    for nc in notcars:
+        load(nc)
+
+    for i in cars[:5]:
+        img = load(i)
+        print(img.shape, img.dtype)
 
     car_features = extract_features(cars, color_space=color_space, 
                         spatial_size=spatial_size, hist_bins=hist_bins, 
@@ -291,19 +340,21 @@ def test_search(args):
                         orient=orient, pix_per_cell=pix_per_cell, 
                         cell_per_block=cell_per_block, 
                         hog_channel=hog_channel, spatial_feat=spatial_feat, 
-                        hist_feat=hist_feat, hog_feat=hog_feat)      
+                        hist_feat=hist_feat, hog_feat=hog_feat)                      
 
     X = np.vstack((car_features, notcar_features)).astype(np.float64)
     # Fit a per-column scaler
     X_scaler = StandardScaler().fit(X)
     # Apply the scaler to X
-    scaled_X = X_scaler.transform(X)
+    scaled_X = X_scaler.transform(X)    
 
     # Define the labels vector
     y = np.hstack((np.ones(len(car_features)), np.zeros(len(notcar_features))))
 
     rand_state = np.random.randint(0, 100)
     X_train, X_test, y_train, y_test = train_test_split(scaled_X, y, test_size=0.2, random_state=rand_state)
+
+    print(X_train.shape, X_train.dtype)
 
     # print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
 
@@ -320,16 +371,79 @@ def test_search(args):
     print(round(t2-t, 2), 'Seconds to train SVC...')
     print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
 
+    ## Test classifier
+    if False:
+        fig, axs = plt.subplots(8, 8, figsize=(12, 12))
+        fig.subplots_adjust(hspace = .2, wspace=.001)
+        axs = axs.ravel()
+
+
+        scaler = X_scaler
+
+        for i in np.arange(32):
+            item = random.choice(cars)
+            img = load(item)
+
+            features = single_img_features(to_colorspace(img, color_space), 
+                                spatial_size=spatial_size, hist_bins=hist_bins, 
+                                orient=orient, pix_per_cell=pix_per_cell, 
+                                cell_per_block=cell_per_block, 
+                                hog_channel=hog_channel, spatial_feat=spatial_feat, 
+                                hist_feat=hist_feat, hog_feat=hog_feat)        
+
+            #5) Scale extracted features to be fed to classifier
+            test_features = scaler.transform(np.array(features).reshape(1, -1))                
+            # print(test_features.shape, test_features.min(), test_features.max())        
+            #6) Predict using your classifier
+            prediction = svc.predict(test_features)
+            if prediction == 1:
+                axs[i].set_title('car', fontsize=10)
+            else:
+                axs[i].set_title('not-car', fontsize=10)
+
+            axs[i].axis('off')
+            
+            axs[i].imshow(img)
+
+            for i in np.arange(32, 64):
+                item = random.choice(notcars)
+                img = load(item)
+
+                features = single_img_features(to_colorspace(img, color_space), 
+                                    spatial_size=spatial_size, hist_bins=hist_bins, 
+                                    orient=orient, pix_per_cell=pix_per_cell, 
+                                    cell_per_block=cell_per_block, 
+                                    hog_channel=hog_channel, spatial_feat=spatial_feat, 
+                                    hist_feat=hist_feat, hog_feat=hog_feat)        
+
+                #5) Scale extracted features to be fed to classifier
+                test_features = scaler.transform(np.array(features).reshape(1, -1))                
+                # print(test_features.shape, test_features.min(), test_features.max())        
+                #6) Predict using your classifier
+                prediction = svc.predict(test_features)
+                if prediction == 1:
+                    axs[i].set_title('car', fontsize=10)
+                else:
+                    axs[i].set_title('not-car', fontsize=10)
+                
+                axs[i].axis('off')
+                axs[i].imshow(img)        
+
+        plt.show()
+
+        return
+
+
     for path in args:
         image = load_image(path)
-        print(path, image.shape, image.dtype)
+        draw_image = np.copy(image)
+        feature_image = to_colorspace(image, color_space)
 
-        if True:
-            draw_image = np.copy(image)
-            windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
+        if False:            
+            windows = slide_window(feature_image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
                                 xy_window=(96, 96), xy_overlap=(0.5, 0.5))
 
-            hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_space, 
+            hot_windows = search_windows(feature_image, windows, svc, X_scaler,
                                     spatial_size=spatial_size, hist_bins=hist_bins, 
                                     orient=orient, pix_per_cell=pix_per_cell, 
                                     cell_per_block=cell_per_block, 
@@ -339,11 +453,13 @@ def test_search(args):
             out_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
         else:
             ystart, ystop = y_start_stop
-            scale = 2.0
-
-            out_img = find_cars(image, color_space, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins,
-                spatial_feat=spatial_feat, hist_feat=hist_feat, hog_feat=hog_feat        
-            )
+            all_windows = []
+            for scale in [1.0, 1.5]:
+                hot_windows = find_cars(feature_image, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hog_channel,
+                    spatial_feat=spatial_feat, hist_feat=hist_feat, hog_feat=hog_feat        
+                )
+                all_windows.extend(hot_windows)
+            out_img = draw_boxes(draw_image, all_windows, color=(0, 0, 255), thick=6)
         plt.imshow(out_img)
         plt.show()
 
