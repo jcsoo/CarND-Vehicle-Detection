@@ -92,7 +92,6 @@ def search_windows(img, windows, clf, scaler, color_space='RGB',
                             cell_per_block=cell_per_block, 
                             hog_channel=hog_channel, spatial_feat=spatial_feat, 
                             hist_feat=hist_feat, hog_feat=hog_feat)        
-
         #5) Scale extracted features to be fed to classifier
         test_features = scaler.transform(np.array(features).reshape(1, -1))
         #6) Predict using your classifier
@@ -185,7 +184,7 @@ def test_hog():
 
 def test_search(args):
     count = 500
-    ### TODO: Tweak these parameters and see how the results change.
+
     color_space = 'RGB' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
     orient = 9  # HOG orientations
     pix_per_cell = 8 # HOG pixels per cell
@@ -198,26 +197,40 @@ def test_search(args):
     hog_feat = True # HOG features on or off
     y_start_stop = [500, 700] # Min and max in y to search in slide_window()    
 
-    items = samples(count)
-    img = load(items[0])
-    print(img.shape, img.min(), img.max())
+    cars = vehicles()[:count]
+    notcars = non_vehicles()[:count]
 
-    X = extract_features(items, color_space=color_space, 
+    car_features = extract_features(cars, color_space=color_space, 
                         spatial_size=spatial_size, hist_bins=hist_bins, 
                         orient=orient, pix_per_cell=pix_per_cell, 
                         cell_per_block=cell_per_block, 
                         hog_channel=hog_channel, spatial_feat=spatial_feat, 
                         hist_feat=hist_feat, hog_feat=hog_feat)
 
-    
+    notcar_features = extract_features(notcars, color_space=color_space, 
+                        spatial_size=spatial_size, hist_bins=hist_bins, 
+                        orient=orient, pix_per_cell=pix_per_cell, 
+                        cell_per_block=cell_per_block, 
+                        hog_channel=hog_channel, spatial_feat=spatial_feat, 
+                        hist_feat=hist_feat, hog_feat=hog_feat)      
+
+    X = np.vstack((car_features, notcar_features)).astype(np.float64)
+    # Fit a per-column scaler
     X_scaler = StandardScaler().fit(X)
+    # Apply the scaler to X
     scaled_X = X_scaler.transform(X)
-    y = item_labels(items)
-    
+
+    # Define the labels vector
+    y = np.hstack((np.ones(len(car_features)), np.zeros(len(notcar_features))))
+
     rand_state = np.random.randint(0, 100)
     X_train, X_test, y_train, y_test = train_test_split(scaled_X, y, test_size=0.2, random_state=rand_state)
 
     # print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
+
+    print('Using:',orient,'orientations',pix_per_cell,
+        'pixels per cell and', cell_per_block,'cells per block')
+    print('Feature vector length:', len(X_train[0]))
 
     # Use a linear SVC (support vector classifier)
     svc = LinearSVC()
@@ -226,7 +239,7 @@ def test_search(args):
     svc.fit(X_train, y_train)
     t2 = time.time()
     print(round(t2-t, 2), 'Seconds to train SVC...')
-    print('Test Accuracy of SVC = ', svc.score(X_test, y_test))
+    print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
 
     image = load_image(args[0])
     print(image.shape, image.min(), image.max())
