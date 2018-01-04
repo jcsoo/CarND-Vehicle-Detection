@@ -6,10 +6,15 @@ import sys, os, glob, random
 def load_png(path):
     return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
 
+def load_jpg(path):
+    return cv2.cvtColor(cv2.imread(path).astype(np.float32)/255, cv2.COLOR_BGR2RGB)
+
 def load_image(path):
     ext = os.path.splitext(path)[1]
     if ext == '.png':
         return load_png(path)
+    elif ext == '.jpg':
+        return load_jpg(path)
     else:
         raise Exception("Cannot load image with extension %s", ext)
         
