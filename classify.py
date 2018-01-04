@@ -84,7 +84,8 @@ def search_windows(img, windows, clf, scaler, color_space='RGB',
     #2) Iterate over all windows in the list
     for window in windows:
         #3) Extract the test window from original image
-        test_img = cv2.resize(img[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64))              
+        test_img = cv2.resize(img[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64))        
+
         #4) Extract features for that window using single_img_features()
         features = single_img_features(test_img, color_space=color_space, 
                             spatial_size=spatial_size, hist_bins=hist_bins, 
@@ -261,19 +262,19 @@ def find_cars(img, color_space, ystart, ystop, scale, svc, X_scaler, orient, pix
     return draw_img
 
 def test_search(args):
-    count = 500
+    count = 1000
 
     color_space = 'HSV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
     orient = 9  # HOG orientations
-    pix_per_cell = 8 # HOG pixels per cell
+    pix_per_cell = 16 # HOG pixels per cell
     cell_per_block = 2 # HOG cells per block
     hog_channel = 'ALL' # Can be 0, 1, 2, or "ALL"
     spatial_size = (16, 16) # Spatial binning dimensions
     hist_bins = 16    # Number of histogram bins
-    spatial_feat = True # Spatial features on or off
-    hist_feat = False # Histogram features on or off
+    spatial_feat = False # Spatial features on or off
+    hist_feat = True # Histogram features on or off
     hog_feat = False # HOG features on or off
-    y_start_stop = [400, 700] # Min and max in y to search in slide_window()    
+    y_start_stop = [500, 700] # Min and max in y to search in slide_window()    
 
     cars = vehicles()[:count]
     notcars = non_vehicles()[:count]
@@ -319,33 +320,34 @@ def test_search(args):
     print(round(t2-t, 2), 'Seconds to train SVC...')
     print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
 
-    image = load_image(args[0])
+    for path in args:
+        image = load_image(path)
+        print(path, image.shape, image.dtype)
+
+        if True:
+            draw_image = np.copy(image)
+            windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
+                                xy_window=(96, 96), xy_overlap=(0.5, 0.5))
+
+            hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_space, 
+                                    spatial_size=spatial_size, hist_bins=hist_bins, 
+                                    orient=orient, pix_per_cell=pix_per_cell, 
+                                    cell_per_block=cell_per_block, 
+                                    hog_channel=hog_channel, spatial_feat=spatial_feat, 
+                                    hist_feat=hist_feat, hog_feat=hog_feat)                       
+
+            out_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
+        else:
+            ystart, ystop = y_start_stop
+            scale = 2.0
+
+            out_img = find_cars(image, color_space, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins,
+                spatial_feat=spatial_feat, hist_feat=hist_feat, hog_feat=hog_feat        
+            )
+        plt.imshow(out_img)
+        plt.show()
 
 
-    # print(image.shape, image.min(), image.max())
-    # draw_image = np.copy(image)
-    # windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
-    #                     xy_window=(96, 96), xy_overlap=(0.5, 0.5))
-
-    # hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_space, 
-    #                         spatial_size=spatial_size, hist_bins=hist_bins, 
-    #                         orient=orient, pix_per_cell=pix_per_cell, 
-    #                         cell_per_block=cell_per_block, 
-    #                         hog_channel=hog_channel, spatial_feat=spatial_feat, 
-    #                         hist_feat=hist_feat, hog_feat=hog_feat)                       
-
-    # window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
-
-    ystart, ystop = y_start_stop
-    scale = 1.5
-
-    out_img = find_cars(image, color_space, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins,
-        spatial_feat=spatial_feat, hist_feat=hist_feat, hog_feat=hog_feat
-    
-    )
-
-    plt.imshow(out_img)
-    plt.show()
 
 def main(args):
     test_search(args)

@@ -19,12 +19,12 @@ def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False, featu
         return features
 
 def main(args):
-    for item in samples(5):
+    for item in samples(3):
         path, tag = item['path'], item['tag']
-        img = load_image(path)[:,:,0]
+        img = load_image(path)
 
 
-        features, hog_image = get_hog_features(img, 9, 8, 2, True, True)
+        features, hog_image = get_hog_features(img[:,:,2], 9, 16, 4, True, True)
 
         
         fig = plt.figure(figsize=(12,3))
@@ -33,7 +33,7 @@ def main(args):
         plt.title('%s' % tag)    
 
         plt.subplot(132)
-        plt.imshow(hog_image)
+        plt.imshow(hog_image, cmap='gray')
         plt.title('features')
 
         plt.subplot(133)

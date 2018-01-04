@@ -5,11 +5,9 @@ import sys, os, glob, random
 
 def load_png(path):
     return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
-    # return cv2.cvtColor(cv2.imread(path).astype(np.float32) / 255, cv2.COLOR_BGR2RGB)
 
 def load_jpg(path):
     return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
-    # return cv2.cvtColor(cv2.imread(path).astype(np.float32) / 255, cv2.COLOR_BGR2RGB)
 
 def load_image(path):
     ext = os.path.splitext(path)[1]
@@ -59,13 +57,20 @@ def test_split(items, test_size=0.1):
     return items[:train_len], items[train_len:]
 
 def main(args):
-    (train, test) = test_split(samples(1000))
-    for item in train[:5]:
-        path = item['path']
-        cv2.imshow(item['tag'], load_image(path))
-        key = cv2.waitKey()
-        if key == 27:
-            return
+    items = samples()
+
+    fig, axs = plt.subplots(8, 8, figsize=(12, 12))
+    fig.subplots_adjust(hspace = .2, wspace=.001)
+    axs = axs.ravel()
+
+    for i in np.arange(64):
+        item = random.choice(items)
+        img = load_image(item['path'])
+        axs[i].axis('off')
+        axs[i].set_title(item['tag'], fontsize=10)
+        axs[i].imshow(img)
+
+    plt.show()
 
 
 if __name__ == '__main__':
