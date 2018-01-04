@@ -34,7 +34,7 @@ def single_img_features(img, color_space='RGB', spatial_size=(32, 32),
             hog_features = get_hog_features(feature_image[:,:,hog_channel], orient, 
                 pix_per_cell, cell_per_block, vis=False, feature_vec=True)            
         img_features.append(hog_features)
-
+    
     return np.concatenate(img_features)
 
 def scale_features(features_list):
@@ -43,19 +43,16 @@ def scale_features(features_list):
     scaled_X = X_scaler.transform(X)
     return scaled_X, X_scaler
 
-def extract_features(items, color_space='RGB', spatial_size=(32, 32),
-                        hist_bins=32, hist_range=(0, 256),
-                        orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0,
-                        spatial_feat=True, hist_feat=True, hog_feat=True):
+def extract_features(items, *args, **kw):
     features_list = []
     
     for item in items:
         img = load(item)
-        features = single_img_features(img)
+        features = single_img_features(img, *args, **kw)
         features_list.append(features)
 
     X = np.vstack(features_list).astype(np.float64)
-    return features_list
+    return X
 
 
 

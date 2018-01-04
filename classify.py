@@ -84,14 +84,15 @@ def search_windows(img, windows, clf, scaler, color_space='RGB',
     #2) Iterate over all windows in the list
     for window in windows:
         #3) Extract the test window from original image
-        test_img = cv2.resize(img[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64))      
+        test_img = cv2.resize(img[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64))              
         #4) Extract features for that window using single_img_features()
         features = single_img_features(test_img, color_space=color_space, 
                             spatial_size=spatial_size, hist_bins=hist_bins, 
                             orient=orient, pix_per_cell=pix_per_cell, 
                             cell_per_block=cell_per_block, 
                             hog_channel=hog_channel, spatial_feat=spatial_feat, 
-                            hist_feat=hist_feat, hog_feat=hog_feat)
+                            hist_feat=hist_feat, hog_feat=hog_feat)        
+
         #5) Scale extracted features to be fed to classifier
         test_features = scaler.transform(np.array(features).reshape(1, -1))
         #6) Predict using your classifier
@@ -198,18 +199,23 @@ def test_search(args):
     y_start_stop = [500, 700] # Min and max in y to search in slide_window()    
 
     items = samples(count)
+    img = load(items[0])
+    print(img.shape, img.min(), img.max())
 
-    features, X_scaler = scale_features(extract_features(items, color_space=color_space, 
+    X = extract_features(items, color_space=color_space, 
                         spatial_size=spatial_size, hist_bins=hist_bins, 
                         orient=orient, pix_per_cell=pix_per_cell, 
                         cell_per_block=cell_per_block, 
                         hog_channel=hog_channel, spatial_feat=spatial_feat, 
-                        hist_feat=hist_feat, hog_feat=hog_feat))
-    labels = item_labels(items)
+                        hist_feat=hist_feat, hog_feat=hog_feat)
+
+    
+    X_scaler = StandardScaler().fit(X)
+    scaled_X = X_scaler.transform(X)
+    y = item_labels(items)
     
     rand_state = np.random.randint(0, 100)
-    X_train, X_test, y_train, y_test = train_test_split(
-        features, labels, test_size=0.2, random_state=rand_state)
+    X_train, X_test, y_train, y_test = train_test_split(scaled_X, y, test_size=0.2, random_state=rand_state)
 
     # print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
 
@@ -223,6 +229,7 @@ def test_search(args):
     print('Test Accuracy of SVC = ', svc.score(X_test, y_test))
 
     image = load_image(args[0])
+    print(image.shape, image.min(), image.max())
     draw_image = np.copy(image)
 
     # Uncomment the following line if you extracted training

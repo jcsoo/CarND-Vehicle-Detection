@@ -7,7 +7,7 @@ def load_png(path):
     return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
 
 def load_jpg(path):
-    return cv2.cvtColor(cv2.imread(path).astype(np.float32)/255, cv2.COLOR_BGR2RGB)
+    return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
 
 def load_image(path):
     ext = os.path.splitext(path)[1]
