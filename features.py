@@ -7,7 +7,7 @@ from color import *
 from gradient import *
 from sklearn.preprocessing import StandardScaler
 
-def extract_features(img, cspace='RGB', spatial_size=(32, 32),
+def extract_img_features(img, cspace='RGB', spatial_size=(32, 32),
                         hist_bins=32, hist_range=(0, 256)):
     feature_image = to_colorspace(img, cspace)
 
@@ -18,20 +18,35 @@ def extract_features(img, cspace='RGB', spatial_size=(32, 32),
 
     return np.concatenate((spatial_features, hist_features))
 
-def plot_features(items):
+def scale_features(features_list):
+    X = np.vstack(features_list).astype(np.float64)
+    X_scaler = StandardScaler().fit(X)
+    scaled_X = X_scaler.transform(X)
+    return scaled_X
+
+def extract_features(items, cspace='RGB', spatial_size=(32, 32),
+                        hist_bins=32, hist_range=(0, 256)):    
     features_list = []
     
     for item in items:
         path = item['path']
         tag = item['tag']
         img = load_image(path)
-        features = extract_features(img)
+        features = extract_img_features(img)
         features_list.append(features)
+
+    X = np.vstack(features_list).astype(np.float64)
+    return features_list
+
+
+def plot_features(items):
+    features_list = extract_features(items)
 
     X = np.vstack(features_list).astype(np.float64)
 
     X_scaler = StandardScaler().fit(X)
     scaled_X = X_scaler.transform(X)
+
 
     for i in range(5):
         ndx = np.random.randint(0, len(items))
