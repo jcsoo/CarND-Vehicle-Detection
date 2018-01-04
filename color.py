@@ -26,8 +26,18 @@ def to_colorspace(img, color_space='RGB'):
     return feature_image    
 
 # Define a function to compute color histogram features  
-def rgb_hist(img, color_space='RGB', nbins=32, bins_range=(0, 256)):
-    img = to_colorspace(img, color_space)
+def color_hist(img, nbins=32, bins_range=(0, 256)):
+    # Compute the histogram of the color channels separately
+    channel1_hist = np.histogram(img[:,:,0], bins=nbins, range=bins_range)
+    channel2_hist = np.histogram(img[:,:,1], bins=nbins, range=bins_range)
+    channel3_hist = np.histogram(img[:,:,2], bins=nbins, range=bins_range)
+    # Concatenate the histograms into a single feature vector
+    hist_features = np.concatenate((channel1_hist[0], channel2_hist[0], channel3_hist[0]))
+    # Return the individual histograms, bin_centers and feature vector
+    return hist_features
+
+# Define a function to compute color histogram features  
+def rgb_hist(img, nbins=32, bins_range=(0, 256)):
     # Compute the histogram of the RGB channels separately
     rhist = np.histogram(img[:,:,0], bins=nbins, range=bins_range)
     ghist = np.histogram(img[:,:,1], bins=nbins, range=bins_range)
@@ -40,20 +50,19 @@ def rgb_hist(img, color_space='RGB', nbins=32, bins_range=(0, 256)):
     # Return the individual histograms, bin_centers and feature vector
     return rhist, ghist, bhist, bin_centers, hist_features
     
-# Generate colorspace histogram vector
-def bin_spatial(img, color_space='RGB', size=(32, 32)):
-    feature_image = to_colorspace(img, color_space)
+# Generate spatial vector
+def bin_spatial(img, size=(32, 32)):    
     # Use cv2.resize().ravel() to create the feature vector
-    features = cv2.resize(feature_image, size).ravel() 
+    features = cv2.resize(img, size).ravel() 
     # Return the feature vector
     return features
 
 def plot_histogram(item, color_space='RGB'):
     path = item['path']
     tag = item['tag']
-    img = load_image(path)
+    img = to_colorspace(load_image(path), color_space)
 
-    rhist, ghist, bhist, bin_centers, hist_features = rgb_hist(img, color_space)
+    rhist, ghist, bhist, bin_centers, hist_features = rgb_hist(img)
 
     # Plot a figure with all three bar charts
     fig = plt.figure(figsize=(12,3))        
@@ -74,7 +83,7 @@ def plot_histogram(item, color_space='RGB'):
     plt.title('%s Histogram' % color_space[2])
     plt.show()
 
-def plot_bin_spatial(item, color_space='RGB'):
+def plot_bin_spatial(item):
     path = item['path']
     tag = item['tag']
     img = load_image(path)
@@ -87,7 +96,7 @@ def plot_bin_spatial(item, color_space='RGB'):
     sp = 172
 
     for cs in COLOR_SPACES:
-        feature_vec = bin_spatial(img, color_space=cs, size=(32, 32))
+        feature_vec = bin_spatial(to_colorspace(img, cs), size=(32, 32))
         plt.subplot(sp)
         plt.plot(feature_vec)
         plt.title(cs)
@@ -96,8 +105,8 @@ def plot_bin_spatial(item, color_space='RGB'):
 
 def main(args):
     for item in samples(5):
-        # plot_bin_spatial(item)
-        plot_histogram(item, args[0])
+        plot_bin_spatial(item)
+        # plot_histogram(item, args[0])
 
 
 if __name__ == '__main__':
