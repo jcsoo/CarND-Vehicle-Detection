@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 import sys, os, glob, random
 
 def load_png(path):
@@ -47,7 +48,12 @@ def test_split(items, test_size=0.1):
 
 def main(args):
     (train, test) = test_split(samples(1000))
-    print(len(train), len(test))
+    for item in train[:5]:
+        path = item['path']
+        cv2.imshow(item['tag'], load_image(path))
+        key = cv2.waitKey()
+        if key == 27:
+            return
 
 
 if __name__ == '__main__':
