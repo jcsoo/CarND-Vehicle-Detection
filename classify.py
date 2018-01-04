@@ -182,6 +182,84 @@ def test_hog():
                         
                         print(colorspace, orient, pix_per_cell, cell_per_block, hog_channel, score, '%2.2f' % dt)
 
+# Define a single function that can extract features using hog sub-sampling and make predictions
+def find_cars(img, color_space, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins,
+    spatial_feat=True, hist_feat=True, hog_feat=True
+):
+    
+    draw_img = np.copy(img)
+   
+    img_tosearch = img[ystart:ystop,:,:]
+    ctrans_tosearch = to_colorspace(img_tosearch, color_space)
+    if scale != 1:
+        imshape = ctrans_tosearch.shape
+        ctrans_tosearch = cv2.resize(ctrans_tosearch, (np.int(imshape[1]/scale), np.int(imshape[0]/scale)))
+        
+    ch1 = ctrans_tosearch[:,:,0]
+    ch2 = ctrans_tosearch[:,:,1]
+    ch3 = ctrans_tosearch[:,:,2]
+
+    # Define blocks and steps as above
+    nxblocks = (ch1.shape[1] // pix_per_cell) - cell_per_block + 1
+    nyblocks = (ch1.shape[0] // pix_per_cell) - cell_per_block + 1 
+    nfeat_per_block = orient*cell_per_block**2
+    
+    # 64 was the orginal sampling rate, with 8 cells and 8 pix per cell
+    window = 64
+    nblocks_per_window = (window // pix_per_cell) - cell_per_block + 1
+    cells_per_step = 2  # Instead of overlap, define how many cells to step
+    nxsteps = (nxblocks - nblocks_per_window) // cells_per_step + 1
+    nysteps = (nyblocks - nblocks_per_window) // cells_per_step + 1
+    
+    # Compute individual channel HOG features for the entire image
+    hog1 = get_hog_features(ch1, orient, pix_per_cell, cell_per_block, feature_vec=False)
+    hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=False)
+    hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
+    
+    for xb in range(nxsteps):
+        for yb in range(nysteps):
+            ypos = yb*cells_per_step
+            xpos = xb*cells_per_step
+            features = []
+
+
+            xleft = xpos*pix_per_cell
+            ytop = ypos*pix_per_cell
+
+            # Extract the image patch
+            subimg = cv2.resize(ctrans_tosearch[ytop:ytop+window, xleft:xleft+window], (64,64))
+          
+            # Get color features
+            if spatial_feat:
+                spatial_features = bin_spatial(subimg, size=spatial_size)            
+                features.append(spatial_features)
+
+            if hist_feat:
+                hist_features = color_hist(subimg, nbins=hist_bins)
+                features.append(hist_features)
+
+
+            if hog_feat:
+                # Extract HOG for this patch
+                hog_feat1 = hog1[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                hog_feat2 = hog2[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                hog_feat3 = hog3[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
+                hog_features = np.hstack((hog_feat1, hog_feat2, hog_feat3))
+                features.append(hog_features)
+
+
+            # Scale features and make a prediction
+            test_features = X_scaler.transform(np.hstack(features).reshape(1, -1))    
+            test_prediction = svc.predict(test_features)
+            
+            if test_prediction == 1:
+                xbox_left = np.int(xleft*scale)
+                ytop_draw = np.int(ytop*scale)
+                win_draw = np.int(window*scale)
+                cv2.rectangle(draw_img,(xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart),(0,0,255),6) 
+                
+    return draw_img
+
 def test_search(args):
     count = 500
 
@@ -193,8 +271,8 @@ def test_search(args):
     spatial_size = (16, 16) # Spatial binning dimensions
     hist_bins = 16    # Number of histogram bins
     spatial_feat = True # Spatial features on or off
-    hist_feat = True # Histogram features on or off
-    hog_feat = True # HOG features on or off
+    hist_feat = False # Histogram features on or off
+    hog_feat = False # HOG features on or off
     y_start_stop = [400, 700] # Min and max in y to search in slide_window()    
 
     cars = vehicles()[:count]
@@ -242,27 +320,31 @@ def test_search(args):
     print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
 
     image = load_image(args[0])
-    print(image.shape, image.min(), image.max())
-    draw_image = np.copy(image)
 
-    # Uncomment the following line if you extracted training
-    # data from .png images (scaled 0 to 1 by mpimg) and the
-    # image you are searching is a .jpg (scaled 0 to 255)
-    #image = image.astype(np.float32)/255
 
-    windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
-                        xy_window=(96, 96), xy_overlap=(0.5, 0.5))
+    # print(image.shape, image.min(), image.max())
+    # draw_image = np.copy(image)
+    # windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
+    #                     xy_window=(96, 96), xy_overlap=(0.5, 0.5))
 
-    hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_space, 
-                            spatial_size=spatial_size, hist_bins=hist_bins, 
-                            orient=orient, pix_per_cell=pix_per_cell, 
-                            cell_per_block=cell_per_block, 
-                            hog_channel=hog_channel, spatial_feat=spatial_feat, 
-                            hist_feat=hist_feat, hog_feat=hog_feat)                       
+    # hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_space, 
+    #                         spatial_size=spatial_size, hist_bins=hist_bins, 
+    #                         orient=orient, pix_per_cell=pix_per_cell, 
+    #                         cell_per_block=cell_per_block, 
+    #                         hog_channel=hog_channel, spatial_feat=spatial_feat, 
+    #                         hist_feat=hist_feat, hog_feat=hog_feat)                       
 
-    window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
+    # window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
 
-    plt.imshow(window_img)
+    ystart, ystop = y_start_stop
+    scale = 1.5
+
+    out_img = find_cars(image, color_space, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins,
+        spatial_feat=spatial_feat, hist_feat=hist_feat, hog_feat=hog_feat
+    
+    )
+
+    plt.imshow(out_img)
     plt.show()
 
 def main(args):
