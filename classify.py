@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 from loader import *
 from color import *
@@ -71,24 +72,32 @@ def test_hog():
     count = 500
     orient = 9
 
-    items = samples(count)
+  
 
-    for colorspace in COLOR_SPACES:
+    for colorspace in ['LUV', 'YUV']:
         for pix_per_cell in [4, 8]:
             for cell_per_block in [2, 4]:
-                for hog_channel in [0, 1, 2, 'ALL']:
-                    features = scale_features(extract_hog_features(items, colorspace, orient, pix_per_cell, cell_per_block, hog_channel))
-                    labels = item_labels(items)
+                for hog_channel in ['ALL']:
+                    for i in range(5):
+                        items = samples(count)
+                        for item in items:
+                            load(item)
+                        t = time.time()
+                        features = scale_features(extract_hog_features(items, colorspace, orient, pix_per_cell, cell_per_block, hog_channel))
+                        labels = item_labels(items)
 
-                    rand_state = np.random.randint(0, 100)
-                    X_train, X_test, y_train, y_test = train_test_split(
-                        features, labels, test_size=0.2, random_state=rand_state)
+                        rand_state = np.random.randint(0, 100)
+                        X_train, X_test, y_train, y_test = train_test_split(
+                            features, labels, test_size=0.2, random_state=rand_state)
 
-                    svc = LinearSVC()
-                    svc.fit(X_train, y_train)
-                    score = svc.score(X_test, y_test)
-                    
-                    print(colorspace, orient, pix_per_cell, cell_per_block, hog_channel, score)
+                        svc = LinearSVC()
+                        svc.fit(X_train, y_train)
+                        t2 = time.time()
+                        score = svc.score(X_test, y_test)
+
+                        dt = t2 - t
+                        
+                        print(colorspace, orient, pix_per_cell, cell_per_block, hog_channel, score, '%2.2f' % dt)
 
 
 def main(args):
