@@ -204,9 +204,7 @@ def test_hog():
 def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hog_channel,
     spatial_feat=True, hist_feat=True, hog_feat=True
 ):
-    
-    draw_img = np.copy(img)
-   
+       
     img_tosearch = img[ystart:ystop,:,:]
     ctrans_tosearch = img_tosearch
 
@@ -323,10 +321,6 @@ def test_search(args):
 
     for nc in notcars:
         load(nc)
-
-    for i in cars[:5]:
-        img = load(i)
-        print(img.shape, img.dtype)
 
     car_features = extract_features(cars, color_space=color_space, 
                         spatial_size=spatial_size, hist_bins=hist_bins, 
@@ -454,7 +448,7 @@ def test_search(args):
         else:
             ystart, ystop = y_start_stop
             all_windows = []
-            for scale in [1.0, 1.5]:
+            for scale in [1.0, 1.5, 2.0]:
                 hot_windows = find_cars(feature_image, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, hog_channel,
                     spatial_feat=spatial_feat, hist_feat=hist_feat, hog_feat=hog_feat        
                 )
