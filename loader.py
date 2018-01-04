@@ -13,6 +13,11 @@ def load_image(path):
     else:
         raise Exception("Cannot load image with extension %s", ext)
         
+def load(item):
+    if item.get('img') is None:
+        item['img'] = load_image(item['path'])
+    return item['img']
+
 def vehicles():
     items = []
     for path in glob.glob("vehicles/*/*.png"):
