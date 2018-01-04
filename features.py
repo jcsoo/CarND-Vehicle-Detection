@@ -29,14 +29,34 @@ def extract_features(items, cspace='RGB', spatial_size=(32, 32),
     features_list = []
     
     for item in items:
-        path = item['path']
-        tag = item['tag']
-        img = load_image(path)
+        img = load(item)
         features = extract_img_features(img)
         features_list.append(features)
 
     X = np.vstack(features_list).astype(np.float64)
     return features_list
+
+
+
+def extract_hog_features(items, cspace='RGB', orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0):
+    features_list = []
+    
+    for item in items:        
+        img = load(item)
+        feature_image = to_colorspace(img, cspace)
+        if hog_channel == 'ALL':
+            hog_features = []
+            for channel in range(feature_image.shape[2]):
+                hog_features.append(get_hog_features(feature_image[:,:,channel], orient, pix_per_cell, cell_per_block, vis=False, feature_vec=True))
+            hog_features = np.ravel(hog_features)
+        else:
+            hog_channel = int(hog_channel)
+            hog_features = get_hog_features(feature_image[:,:,hog_channel], orient, 
+                pix_per_cell, cell_per_block, vis=False, feature_vec=True)            
+        features_list.append(hog_features)
+
+    X = np.vstack(features_list).astype(np.float64)
+    return features_list    
 
 
 def plot_features(items):
