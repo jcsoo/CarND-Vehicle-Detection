@@ -284,7 +284,7 @@ def search_frame(img, spec, clf, scl):
         scales = [1.0, 2.0]
     else:
         y_start_stop = [400, 700] # Min and max in y to search in slide_window()    
-        scales = [1.0, 1.5, 2.0]
+        scales = [1.0, 2.0]
     
     heat_len = 4
 
@@ -320,10 +320,10 @@ def search_frame(img, spec, clf, scl):
     
     HEAT.append(heat)
     HEAT = HEAT[-heat_len:]
-    heat_avg = (HEAT[-1] * 4 + HEAT[-2] * 3 + HEAT[-3] * 2 + HEAT[-4]) / 10.0
+    heat_avg = (HEAT[-1] * 1 + HEAT[-2] * 1 + HEAT[-3] * 1 + HEAT[-4] * 1) / 4.0
 
     # Apply threshold to help remove false positives
-    heat_avg = apply_threshold(heat_avg, 3)
+    heat_avg = apply_threshold(heat_avg, 2)
 
     # Visualize the heatmap when displaying    
     heatmap = np.clip(heat_avg, 0, 255)    
