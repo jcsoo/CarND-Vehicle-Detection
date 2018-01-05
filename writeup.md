@@ -105,6 +105,8 @@ HOG are used for feature extraction along with spatial and color histogram
 sample of those same subsets. The example was modified to support the 
 use of the same classifier, scaler, and feature spec dictionary as the trainer and `search_windows`.
 
+For this technique, the main experimentation that I performed was with the `scale`
+parameter which controls how the image should be resized. Scales of [1.0, 1.5, and 2.0] seemed to work well as well as simply [1.0, 2.0].
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
@@ -113,32 +115,36 @@ directory to check for performance.
 
 Performance with the raw prediction windows was reasonable but tended to include a false positives, as well as overlapping windows.
 
+To improve this performance, a simple heatmap was implemented as suggested in the
+class notes. This can be seen towards the bottom of the main `search` function
+in `search.py`, and consists of four main steps.
+
+First, an empty heatmap image is created, and `add_heat` uses the bounding
+boxes to increment any pixels that contain predicted vehicles. Pixels that
+are contained in multiple bounding boxes are incremented repeatedly and will
+have a higher value.
+
+Second, `apply_threshold` is used to zero out pixels below a certain value. This effectively removes pixels that have not been marked by multiple bounding boxes.
+
+Third, `scipy.ndimage.measurements.label` is used to construct a new set of bounding boxes based on the thresholded heatmap. This list now replaces the original bounding boxes.
+
 
 ---
 
 ### Video Implementation
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](./project_video.mp4)
 
+Here's a [link to my video result](./test_out/project_yuv.mp4)
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
+As described above, the main mechanism for reducing false positives and combining bounding boxes was a thresholded heatmap followed by bounding box construction using 
+`scipy.ndimage.measurements.label`.
 
-Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
+Additionally, the heatmaps were time-averaged before thresholding. A number of different techniques were used, but ultimately a simple equal-weight average of the most recent four frames was used.
 
-### Here are six frames and their corresponding heatmaps:
-
-![alt text][image5]
-
-### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
-![alt text][image6]
-
-### Here the resulting bounding boxes are drawn onto the last frame in the series:
-![alt text][image7]
-
-
+Time-averaging allowed a slightly lower heatmap threshold without adding too many false positives. 
 
 ---
 
@@ -146,5 +152,4 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
 
