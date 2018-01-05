@@ -10,6 +10,17 @@ The goals / steps of this project are the following:
 * Estimate a bounding box for vehicles detected.
 
 [//]: # (Image References)
+
+[01_hog]: ./examples/01_hog.png
+[01_hog_notcar]: ./examples/01_hog_notcar.png
+[03_classifier]: ./examples/03_classifier.png
+[04_sliding_128]: ./examples/04_sliding_128.png
+[04_sliding_96]: ./examples/04_sliding_96.png
+[04_sliding_64]: ./examples/04_sliding_64.png
+[04_sliding_hot]: ./examples/04_sliding_hot.png
+[04_heatmap]: ./examples/04_heatmap.png
+
+
 [image1]: ./examples/car_not_car.png
 [image2]: ./examples/HOG_example.jpg
 [image3]: ./examples/sliding_windows.jpg
@@ -31,6 +42,15 @@ The goals / steps of this project are the following:
 
 The HOG feature extraction code is in the function `get_hog_features` in `gradient.py`. 
 
+`gradient.py` can be used to produce a plot including a sample image, HOG visualization, and the associated feature vector. An example for a car image:
+
+![01_hog][01_hog]
+
+and a non-car image:
+
+![01_hog_notcar][01_hog_notcar]
+
+
 #### 2. Explain how you settled on your final choice of HOG parameters.
 
 HOG parameters were selected based on a multidimensional iterative search using a randomized sample of 500 images. You can view the final version of
@@ -43,7 +63,80 @@ The main dimensions considered were:
    Cells per Block
    Channels Used
 
-A file showing performance of each variant can be viewed in [hog_performance.txt](./hog_performance.txt).
+A file showing performance of each variant can be viewed in [hog_performance.txt](./hog_performance.txt). An excerpt:
+
+```
+# Count = 500
+# colorspace, orient, pix_per_cell, cell_per_block, hog_channel
+
+RGB 9 4 2 0 0.79
+RGB 9 4 2 1 0.81
+RGB 9 4 2 2 0.77
+RGB 9 4 2 A 0.84
+RGB 9 4 4 0 0.85
+RGB 9 4 4 1 0.79
+RGB 9 4 4 2 0.78
+RGB 9 4 4 A 0.83
+RGB 9 8 2 0 0.82
+RGB 9 8 2 1 0.88
+RGB 9 8 2 2 0.79
+RGB 9 8 2 A 0.85
+RGB 9 8 4 0 0.79
+RGB 9 8 4 1 0.87
+RGB 9 8 4 2 0.83
+RGB 9 8 4 A 0.85
+
+HSV 9 4 2 0 0.84
+HSV 9 4 2 1 0.71
+HSV 9 4 2 2 0.83
+HSV 9 4 2 A 0.92
+HSV 9 4 4 0 0.76
+HSV 9 4 4 1 0.79
+HSV 9 4 4 2 0.82
+HSV 9 4 4 A 0.89
+HSV 9 8 2 0 0.84
+HSV 9 8 2 1 0.78
+HSV 9 8 2 2 0.82
+HSV 9 8 2 A 0.82
+HSV 9 8 4 0 0.74
+HSV 9 8 4 1 0.81
+HSV 9 8 4 2 0.86
+HSV 9 8 4 A 0.79
+
+LUV 9 4 2 0 0.75
+LUV 9 4 2 1 0.93
+LUV 9 4 2 2 0.83
+LUV 9 4 2 A 0.91
+LUV 9 4 4 0 0.84
+LUV 9 4 4 1 0.88
+LUV 9 4 4 2 0.84
+LUV 9 4 4 A 0.96 *
+LUV 9 8 2 0 0.83
+LUV 9 8 2 1 0.91
+LUV 9 8 2 2 0.86
+LUV 9 8 2 A 0.92
+LUV 9 8 4 0 0.83
+LUV 9 8 4 1 0.88
+LUV 9 8 4 2 0.89
+LUV 9 8 4 A 0.96 *
+
+# Later runs were repeated and timed
+
+YUV 9 4 4 A 0.96 10.70 *
+YUV 9 4 4 A 0.94 10.45 *
+YUV 9 4 4 A 0.93 10.15 *
+YUV 9 4 4 A 0.94 11.18 *
+YUV 9 4 4 A 0.93 10.54 *
+
+YUV 9 8 2 A 0.94 2.49
+YUV 9 8 2 A 0.89 2.43
+YUV 9 8 2 A 0.89 2.47
+YUV 9 8 2 A 0.92 2.54
+YUV 9 8 2 A 0.9 2.73
+
+...
+
+```
 
 In general, colorspace YUV and LUV seemed to have the best performance, with pixels per cell / cells per block values of (4, 4) and (8, 2) performing well. Tests that
 include training time show that the (4, 4) variants seem to take much longer to execute so (8, 2) was typically used.
@@ -74,6 +167,14 @@ files with the same base name as the specification file so that they can be
 used by the image / video search process. This allows easy switching between
 feature extraction parameters and classifiers without having to modify code.
 
+A useful utility for verifying the classifier pipeline is `test_classify.py` which
+loads 32 random car images and 32 random non-car images and classifies them
+using the specified spec:
+
+![03_classifier][03_classifier]
+
+This visualization lets you quickly see how well the classifier performs.
+
 ### Sliding Window Search
 
 #### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
@@ -95,6 +196,22 @@ I performed some experimentation with the slide_window parameters. In particular
 `y_start_stop` was adjusted to fit the expected area where vehicles were likely
 to appear, and `xy_window` was varied to search for vehicles of different sizes. In testing, I found that `xy_window` sizes of (128, 128), (96, 96) and (64, 64)
 proved to be useful for selecting vehicles at a variety of distances.
+
+128 x 128:
+
+![][04_sliding_128]
+
+96 x 96:
+
+![][04_sliding_96]
+
+64 x 64:
+
+![][04_sliding_64]
+
+Final grid with car predictions drawn in blue:
+
+![][04_sliding_hot]
 
 A straightforward improvement would be to use different window sizes in different
 parts of the image. Areas higher on the image are likely to contain vehicles that are further away, and should be scanned with large, medium and small windows, while areas lower on the image are likely to contain nearby vehicles and could be scanned with only larger windows.
@@ -128,6 +245,9 @@ Second, `apply_threshold` is used to zero out pixels below a certain value. This
 
 Third, `scipy.ndimage.measurements.label` is used to construct a new set of bounding boxes based on the thresholded heatmap. This list now replaces the original bounding boxes.
 
+An example of a search prediction grid and the heatmap that is produced:
+
+![][04_heatmap]
 
 ---
 
@@ -152,4 +272,10 @@ Time-averaging allowed a slightly lower heatmap threshold without adding too man
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
+The biggest immediate issue that I faced was performance; the current version takes about 30 minutes to process project_video.mp4.
 
+A simple approach would be to reduce the size of the video being processed; instead of 1280x720, I attempted to process it at 640x360. This worked with original sliding window search (after adjusting window sizes) but I was unable to get this to work successfully with `search_cars` which uses HOG sub-sampling. I believe that this is mainly because of the hard-coded window / block size which makes it difficult to change the `scale` parameter below 1.
+
+There are also some structural limitations that force a single colorspace for all feature extraction. It's very possible that different feature extraction techniques could work well with different colorspaces - for instance, spatial binning might work fine in grayscale, and color histograms might work better with a different colorspace than HOG.
+
+Finally, the current predictor produces a simple binary classifiation, and the heatmap simply sums those binary predictions for each pixel. Other predictors (such as a Neural Network classifier) might be able to include a confidence value that would produce a wider range of values for the heatmap, allowing the system to better distinguish between false positives and true positives.
