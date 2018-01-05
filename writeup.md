@@ -19,7 +19,8 @@ The goals / steps of this project are the following:
 [04_sliding_64]: ./examples/04_sliding_64.png
 [04_sliding_hot]: ./examples/04_sliding_hot.png
 [04_heatmap]: ./examples/04_heatmap.png
-
+[05_project]: ./examples/05_project.jpg
+[05_test]: ./examples/05_test.jpg
 
 [image1]: ./examples/car_not_car.png
 [image2]: ./examples/HOG_example.jpg
@@ -255,7 +256,15 @@ An example of a search prediction grid and the heatmap that is produced:
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
 
-Here's a [link to my video result](./test_out/project_yuv.mp4)
+![][05_test]
+
+Video link for [test_yuv.mp4](./test_out/test_yuv.mp4)
+
+![][05_project]
+
+Video link for [project_yuv.mp4](./test_out/project_yuv.mp4)
+
+
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
