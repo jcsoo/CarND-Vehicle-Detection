@@ -12,7 +12,6 @@ from sklearn.svm import LinearSVC
 from skimage.feature import hog
 from sklearn.model_selection import train_test_split, GridSearchCV
 from scipy.ndimage.measurements import label
-from moviepy.editor import VideoFileClip
 
 def load_spec(spec_file):
     with open(spec_file) as f:
@@ -264,63 +263,9 @@ def search(spec_file, paths):
         plt.show()
 
 
-def search_frame(img, spec, clf, scl):
-    y_start_stop = [400, 700] # Min and max in y to search in slide_window()    
-    sizes = [128, 96, 64]
-    # scales = [1.0, 1.5, 2.0]
-    scales = [1.0, 1.5, 2.0]
-
-    draw_img = img.copy()
-    feature_img = to_colorspace(img, spec.get('color_space', 'RGB'))
-
-    hot_windows = []
-
-    if True:
-        for scale in scales:
-            hot_windows.extend(find_cars(feature_img, y_start_stop, scale, clf, scl, spec))
-    else:
-        for size in sizes:
-            windows = slide_window(img.shape, x_start_stop=[None, None], y_start_stop=y_start_stop, xy_window=(size, size), xy_overlap=(0.5, 0.5))
-            hot_windows.extend(search_windows(feature_img, windows, clf, scl, spec))
-
-    # draw_img = draw_boxes(draw_img, hot_windows, color=(0, 0, 255), thick=6)          
-    # plt.imshow(draw_img)
-    # plt.show()        
-
-    heat = np.zeros_like(img[:,:,0]).astype(np.float)
-    add_heat(heat, hot_windows)
-
-    # Apply threshold to help remove false positives
-    heat = apply_threshold(heat, 3)
-
-    # Visualize the heatmap when displaying    
-    heatmap = np.clip(heat, 0, 255)    
-    # Find final boxes from heatmap using label function
-    labels = label(heatmap)
-
-    draw_img = draw_labeled_bboxes(draw_img, labels)        
-
-    return draw_img
-
-
-def search_video(spec_file, path, out_path):
-    spec, clf, scl = load_spec(spec_file)
-    
-    if out_path.find('-1') > 0:
-        clip = VideoFileClip(path).subclip(0, 1)
-    elif out_path.find('-5') > 0:
-        clip = VideoFileClip(path).subclip(0, 5)
-    else:
-        clip = VideoFileClip(path)
-    out_clip = clip.fl_image(lambda img: search_frame(img, spec, clf, scl))
-    out_clip.write_videofile(out_path, audio=False)    
-
 
 def main(args):
-    if args[1].find('mp4') > -1:
-        search_video(args[0], args[1], args[2])
-    else:
-        search(args[0], args[1:])
+    search(args[0], args[1:])
 
 if __name__ == '__main__':
     main(sys.argv[1:])

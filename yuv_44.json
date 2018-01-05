@@ -1,0 +1,17 @@
+{
+    "count": 500,
+    "color_space": "YUV",
+    "spatial": {
+        "size" : [32, 32]
+    },
+    "histogram": {
+        "nbins" : 32,
+        "bins_range" : [0, 256]
+    },
+    "hog": {
+        "orient" : 9,
+        "pix_per_cell" : 4,
+        "cell_per_block" : 4,
+        "channels" : [0, 1, 2]
+    }
+}
