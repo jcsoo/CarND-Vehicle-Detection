@@ -14,6 +14,8 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from scipy.ndimage.measurements import label
 from moviepy.editor import VideoFileClip
 
+HEAT = []
+
 def load_spec(spec_file):
     with open(spec_file) as f:
         spec = json.load(f)
@@ -267,8 +269,8 @@ def search(spec_file, paths):
 def search_frame(img, spec, clf, scl):
     y_start_stop = [400, 700] # Min and max in y to search in slide_window()    
     sizes = [128, 96, 64]
-    # scales = [1.0, 1.5, 2.0]
     scales = [1.0, 1.5, 2.0]
+    heat_len = 4
 
     draw_img = img.copy()
     feature_img = to_colorspace(img, spec.get('color_space', 'RGB'))
@@ -290,11 +292,24 @@ def search_frame(img, spec, clf, scl):
     heat = np.zeros_like(img[:,:,0]).astype(np.float)
     add_heat(heat, hot_windows)
 
+    # Use weighted average of last 4 frames
+
+    global HEAT
+
+    if len(HEAT) == 0:
+        HEAT.append(heat)
+        HEAT.append(heat)
+        HEAT.append(heat)
+    
+    HEAT.append(heat)
+    HEAT = HEAT[-heat_len:]
+    heat_avg = (HEAT[-1] * 4 + HEAT[-2] * 3 + HEAT[-3] * 2 + HEAT[-4]) / 10.0
+
     # Apply threshold to help remove false positives
-    heat = apply_threshold(heat, 3)
+    heat_avg = apply_threshold(heat_avg, 3)
 
     # Visualize the heatmap when displaying    
-    heatmap = np.clip(heat, 0, 255)    
+    heatmap = np.clip(heat_avg, 0, 255)    
     # Find final boxes from heatmap using label function
     labels = label(heatmap)
 
