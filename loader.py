@@ -23,23 +23,29 @@ def load(item):
         item['img'] = load_image(item['path'])
     return item['img']
 
-def vehicles():
+def vehicles(count=None):
     items = []
     for path in glob.glob("vehicles/*/*.png"):
         items.append({
             'path': path,
             'tag': 'vehicle',
         })
+    random.shuffle(items)
+    if count:
+        items = items[:count]
     return items
     
 
-def non_vehicles():    
+def non_vehicles(count=None):    
     items = []
     for path in glob.glob("non-vehicles/*/*.png"):
         items.append({
             'path': path,
             'tag': 'non-vehicle',
         })
+    random.shuffle(items)
+    if count:
+        items = items[:count]
     return items
     
 def samples(count=None):

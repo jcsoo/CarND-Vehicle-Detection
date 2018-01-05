@@ -6,16 +6,16 @@ from skimage.feature import hog
 from loader import *
 
 # Define a function to return HOG features and visualization
-def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False, feature_vec=True):
+def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False, feature_vec=True, block_norm='L1'):
     if vis == True:
         features, hog_image = hog(img, orientations=orient, pixels_per_cell=(pix_per_cell, pix_per_cell),
                                   cells_per_block=(cell_per_block, cell_per_block), transform_sqrt=False, 
-                                  visualise=True, feature_vector=False)
+                                  visualise=True, feature_vector=False, block_norm=block_norm)
         return features, hog_image
     else:      
         features = hog(img, orientations=orient, pixels_per_cell=(pix_per_cell, pix_per_cell),
                        cells_per_block=(cell_per_block, cell_per_block), transform_sqrt=False, 
-                       visualise=False, feature_vector=feature_vec)
+                       visualise=False, feature_vector=feature_vec, block_norm=block_norm)
         return features
 
 def main(args):

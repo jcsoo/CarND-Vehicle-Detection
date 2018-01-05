@@ -7,6 +7,26 @@ from color import *
 from gradient import *
 from sklearn.preprocessing import StandardScaler
 
+def image_features(img, spec):
+    img_features = []    
+    spatial, hist, hog = spec.get('spatial'), spec.get('histogram'), spec.get('hog')
+
+    if spatial:
+        spatial['size'] = tuple(spatial['size'])
+        img_features.append(bin_spatial(img, **spatial))
+    
+    if hist:        
+        img_features.append(color_hist(img, **hist))
+    
+    if hog:
+        hog = hog.copy()
+        hog_features = []
+        for channel in hog.pop('channels'):
+            hog_features.append(get_hog_features(img[:,:,channel], vis=False, feature_vec=True, **hog))
+        img_features.append(np.ravel(hog_features))
+    
+    return np.concatenate(img_features).astype(np.float64)
+
 def single_img_features(img, spatial_size=(32, 32), 
                          color_space=None,
                          hist_bins=32, hist_range=(0, 256), 
