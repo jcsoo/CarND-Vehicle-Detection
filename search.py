@@ -342,7 +342,7 @@ def search_video(spec_file, path, out_path):
     if out_path.find('-1') > 0:
         clip = VideoFileClip(path).subclip(0, 1)
     elif out_path.find('-5') > 0:
-        clip = VideoFileClip(path).subclip(10, 15)
+        clip = VideoFileClip(path).subclip(0, 5)
     else:
         clip = VideoFileClip(path)
     out_clip = clip.fl_image(lambda img: search_frame(img, spec, clf, scl))
