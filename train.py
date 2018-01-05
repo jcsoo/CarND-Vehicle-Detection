@@ -46,16 +46,16 @@ def train_with_spec(spec):
     t2 = time.time()
     print(round(t2-t, 2), 'Seconds to train SVC...')
     print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))    
-    return svc
+    return svc, X_scaler
 
 
 def train_with_file(spec_file):
     with open(spec_file) as f:
-        clf = train_with_spec(json.load(f))
-        with open(spec_file.replace('.json','.clf'), 'wb') as out:
-            pickle.dump(clf, out)
-            
-
+        clf, scl = train_with_spec(json.load(f))
+    with open(spec_file.replace('.json','.clf'), 'wb') as f:
+        pickle.dump(clf, f)
+    with open(spec_file.replace('.json','.scl'), 'wb') as f:
+        pickle.dump(scl, f)
 
 
 def main(args):

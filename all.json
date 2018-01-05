@@ -1,5 +1,4 @@
 {
-    "xcount": 500,
     "color_space": "RGB",
     "spatial": {
         "size" : [32, 32]
