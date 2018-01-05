@@ -331,7 +331,7 @@ def search_frame(img, spec, clf, scl):
     labels = label(heatmap)
 
     draw_img = draw_labeled_bboxes(draw_img, labels)        
-    
+
     draw_img = cv2.resize(draw_img, (1280 // 2, 720 // 2))
     return draw_img
 
