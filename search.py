@@ -98,6 +98,86 @@ def search_windows(img, windows, clf, scaler, spec):
     return on_windows
 
 
+# Define a single function that can extract features using hog sub-sampling and make predictions
+def find_cars(img, y_start_stop, scale, clf, scl, spec):       
+    ystart, ystop = y_start_stop
+    spatial, hist, hog = spec.get('spatial'), spec.get('histogram'), spec.get('hog')
+
+    img_tosearch = img[ystart:ystop,:,:]
+    ctrans_tosearch = img_tosearch
+
+    if scale != 1:
+        imshape = ctrans_tosearch.shape
+        ctrans_tosearch = cv2.resize(ctrans_tosearch, (np.int(imshape[1]/scale), np.int(imshape[0]/scale)))
+
+    shape = ctrans_tosearch.shape
+    orient, pix_per_cell, cell_per_block = hog['orient'], hog['pix_per_cell'], hog['cell_per_block']
+
+
+    # Define blocks and steps as above
+    nxblocks = (shape[1] // pix_per_cell) - cell_per_block + 1
+    nyblocks = (shape[0] // pix_per_cell) - cell_per_block + 1 
+    nfeat_per_block = orient*cell_per_block**2
+    
+    # 64 was the orginal sampling rate, with 8 cells and 8 pix per cell
+    window = 64
+    nblocks_per_window = (window // pix_per_cell) - cell_per_block + 1
+    cells_per_step = 2  # Instead of overlap, define how many cells to step
+    nxsteps = (nxblocks - nblocks_per_window) // cells_per_step + 1
+    nysteps = (nyblocks - nblocks_per_window) // cells_per_step + 1
+    
+    # Compute individual channel HOG features for the entire image    
+
+    
+
+    hog_channels = []
+
+    if hog:
+        hog = hog.copy()
+        for ch in hog.pop('channels'):
+            hog_channels.append(get_hog_features(ctrans_tosearch[:,:,ch], vis=False, feature_vec=False, **hog))
+    
+    boxes = []
+
+    for xb in range(nxsteps):
+        for yb in range(nysteps):
+            ypos = yb*cells_per_step
+            xpos = xb*cells_per_step
+            features = []
+
+
+            xleft = xpos*pix_per_cell
+            ytop = ypos*pix_per_cell
+
+            # Extract the image patch
+            subimg = cv2.resize(ctrans_tosearch[ytop:ytop+window, xleft:xleft+window], (64,64))
+          
+            # Get color features
+            if spatial:
+                features.append(bin_spatial(subimg, **spatial))
+
+            if hist:
+                features.append(color_hist(subimg, **hist))
+
+            if hog:
+                hog_features = []
+                for hc in hog_channels:
+                    hog_features.append(hc[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel())
+                features.append(np.hstack(hog_features))
+
+            # Scale features and make a prediction
+            test_features = scl.transform(np.hstack(features).reshape(1, -1))    
+            test_prediction = clf.predict(test_features)
+            
+            if test_prediction == 1:
+                xbox_left = np.int(xleft*scale)
+                ytop_draw = np.int(ytop*scale)
+                win_draw = np.int(window*scale)
+                # cv2.rectangle(draw_img,(xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart),(0,0,255),6) 
+                boxes.append(((xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart)))
+                
+    return boxes
+
 
 def search(spec_file, paths):
     spec, clf, scl = load_spec(spec_file)
@@ -105,21 +185,28 @@ def search(spec_file, paths):
 
     y_start_stop = [400, 700] # Min and max in y to search in slide_window()    
     sizes = [128, 96, 64]
+    # scales = [1.0, 1.5, 2.0]
+    scales = [1.5, 2.0]
 
     for path in paths:
         img = load_image(path)
         draw_img = img.copy()
         feature_img = to_colorspace(img, spec.get('color_space', 'RGB'))
 
-        for size in sizes:
-            windows = slide_window(img.shape, x_start_stop=[None, None], y_start_stop=y_start_stop, 
-                                    xy_window=(size, size), xy_overlap=(0.5, 0.5))
+        hot_windows = []
 
-            hot_windows = search_windows(feature_img, windows, clf, scl, spec)                  
-            # draw_img = draw_boxes(draw_img, windows, color=(255, 255, 255), thick=2)
-            draw_img = draw_boxes(draw_img, hot_windows, color=(0, 0, 255), thick=6)
+        if True:
+            for scale in scales:
+                hot_windows.extend(find_cars(feature_img, y_start_stop, scale, clf, scl, spec))
+        else:
+            for size in sizes:
+                windows = slide_window(img.shape, x_start_stop=[None, None], y_start_stop=y_start_stop, xy_window=(size, size), xy_overlap=(0.5, 0.5))
+                hot_windows.extend(search_windows(feature_img, windows, clf, scl, spec))
+
+        draw_img = draw_boxes(draw_img, hot_windows, color=(0, 0, 255), thick=6)                
         plt.imshow(draw_img)
         plt.show()        
+
 
 
 

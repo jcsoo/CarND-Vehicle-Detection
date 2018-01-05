@@ -53,7 +53,7 @@ def rgb_hist(img, nbins=32, bins_range=(0, 256)):
 # Generate spatial vector
 def bin_spatial(img, size=(32, 32)):    
     # Use cv2.resize().ravel() to create the feature vector
-    features = cv2.resize(img, size).ravel() 
+    features = cv2.resize(img, tuple(size)).ravel() 
     # Return the feature vector
     return features
 
