@@ -209,7 +209,7 @@ def draw_labeled_bboxes(img, labels):
         # Define a bounding box based on min/max x and y
         bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
         # Draw the box on the image
-        cv2.rectangle(img, bbox[0], bbox[1], (0,0,255), 6)
+        cv2.rectangle(img, bbox[0], bbox[1], (0,0,255), 4)
     # Return the image
     return img
 
@@ -218,13 +218,23 @@ def search(spec_file, paths):
     spec, clf, scl = load_spec(spec_file)
     pprint.pprint(spec)
 
-    y_start_stop = [400, 700] # Min and max in y to search in slide_window()    
-    sizes = [128, 96, 64]
-    # scales = [1.0, 1.5, 2.0]
-    scales = [1.0, 1.5, 2.0]
+    rescale = False
+
+    if rescale:
+        y_start_stop = [200, 350]
+        sizes = [128, 96, 64]        
+        # scales = [2.0, 3.0, 4.0]
+        scales = [0.5, 1.0, 2.0]        
+    else:
+        y_start_stop = [400, 700]
+        sizes = [128, 96, 64]        
+        scales = [1.0, 1.5, 2.0]
 
     for path in paths:
         img = load_image(path)
+        if rescale:
+            img = cv2.resize(img, (1280 // 2, 720 // 2))
+        
         draw_img = img.copy()
         feature_img = to_colorspace(img, spec.get('color_space', 'RGB'))
 
@@ -238,7 +248,7 @@ def search(spec_file, paths):
                 windows = slide_window(img.shape, x_start_stop=[None, None], y_start_stop=y_start_stop, xy_window=(size, size), xy_overlap=(0.5, 0.5))
                 hot_windows.extend(search_windows(feature_img, windows, clf, scl, spec))
 
-        # draw_img = draw_boxes(draw_img, hot_windows, color=(0, 0, 255), thick=6)          
+        # draw_img = draw_boxes(draw_img, hot_windows, color=(0, 0, 255), thick=4)          
         # plt.imshow(draw_img)
         # plt.show()        
 
@@ -246,7 +256,7 @@ def search(spec_file, paths):
         add_heat(heat, hot_windows)
     
         # Apply threshold to help remove false positives
-        heat = apply_threshold(heat, 3)
+        heat = apply_threshold(heat, 0.5)
 
         # Visualize the heatmap when displaying    
         heatmap = np.clip(heat, 0, 255)    
@@ -267,9 +277,15 @@ def search(spec_file, paths):
 
 
 def search_frame(img, spec, clf, scl):
-    y_start_stop = [400, 700] # Min and max in y to search in slide_window()    
-    sizes = [128, 96, 64]
-    scales = [1.0, 1.5, 2.0]
+    rescale = False
+    if rescale:
+        img = cv2.resize(img, (1280 // 2, 720 // 2))
+        y_start_stop = [200, 350] # Min and max in y to search in slide_window()    
+        scales = [1.0, 2.0]
+    else:
+        y_start_stop = [400, 700] # Min and max in y to search in slide_window()    
+        scales = [1.0, 1.5, 2.0]
+    
     heat_len = 4
 
     draw_img = img.copy()
@@ -281,6 +297,7 @@ def search_frame(img, spec, clf, scl):
         for scale in scales:
             hot_windows.extend(find_cars(feature_img, y_start_stop, scale, clf, scl, spec))
     else:
+        sizes = [128, 96, 64]
         for size in sizes:
             windows = slide_window(img.shape, x_start_stop=[None, None], y_start_stop=y_start_stop, xy_window=(size, size), xy_overlap=(0.5, 0.5))
             hot_windows.extend(search_windows(feature_img, windows, clf, scl, spec))
@@ -314,7 +331,8 @@ def search_frame(img, spec, clf, scl):
     labels = label(heatmap)
 
     draw_img = draw_labeled_bboxes(draw_img, labels)        
-
+    
+    draw_img = cv2.resize(draw_img, (1280 // 2, 720 // 2))
     return draw_img
 
 
